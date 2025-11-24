@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dotapay Inline Demo</title>
+    <style>
+      body {
+        font-family: "Segoe UI", sans-serif;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        margin: 0;
+        background: #f4f6fb;
+      }
+      button {
+        background: #44b669;
+        color: #fff;
+        border: none;
+        padding: 16px 28px;
+        border-radius: 999px;
+        font-size: 16px;
+        cursor: pointer;
+        box-shadow: "0 10px 20px rgba(68, 182, 105, 0.35)";
+      }
+    </style>
+  </head>
+  <body>
+    <button id="checkout">Launch Checkout</button>
+    <script src="./inline.js"></script>
+    <script>
+      document.getElementById("checkout").onclick = function () {
+        DotapayInline.open({
+          gatewayUrl: "https://example-gateway.test",
+          tenantToken: "TENANT_TOKEN",
+          payload: {
+            public_key: "PUB_xxx",
+            items: [
+              { unit_cost: 500, quantity: 2, split_group_id: "SG_DEMO_1" },
+              { unit_cost: 1000, quantity: 1, split_group_id: null }
+            ],
+            customer_email: "alice@example.com",
+            customer_name: "Alice Johnson",
+            order_id: "ORD202250d9s2s3X3s3113",
+            fee_bearer: "merchant"
+          },
+          theme: "dotapayDark",
+          onConfirmPayment: function () {
+            return { status: "success", message: "We are confirming your transfer." };
+          }
+        });
+      };
+    </script>
+  </body>
+</html>
+
