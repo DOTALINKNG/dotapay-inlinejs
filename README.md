@@ -12,7 +12,8 @@ Build and render a lightweight inline checkout experience (similar to Paystack I
 <script>
   function startCheckout() {
     DotapayInline.open({
-      gatewayUrl: "https://gateway.example.com",
+      // gatewayUrl is optional - defaults to "https://dotapay.backend-dev.dotapay.ng/api/v1"
+      gatewayUrl: "https://gateway.example.com", // Optional
       tenantToken: "TENANT_TOKEN",
       payload: {
         public_key: "PUB_xxx",
@@ -25,12 +26,13 @@ Build and render a lightweight inline checkout experience (similar to Paystack I
         order_id: "ORD2022...",
         fee_bearer: "merchant"
       },
-      onConfirmPayment: async (paymentResponse) => {
+      callback: function (verificationResponse) {
         /**
-         * Optionally call your backend to verify the transfer before resolving.
-         * Resolve with { status: "success" | "failure", message?: string }.
+         * Called with the verification response from /payment/verify endpoint.
+         * The response contains the transaction object with status (APPROVED, PENDING, etc.).
+         * Use this to handle the verification result (e.g., update your database, send notifications).
          */
-        return { status: "success", message: "We will notify you shortly." };
+        console.log("Verification response:", verificationResponse);
       }
     });
   }
@@ -41,17 +43,17 @@ Build and render a lightweight inline checkout experience (similar to Paystack I
 
 1. **Spinner Screen** – Shown immediately while initiating `/payment/request`.
 2. **Bank Details Screen** – Renders the transfer instructions (account name/number, bank name, amount, expiry countdown) returned from your gateway. Includes a button for the customer to notify completion.
-3. **Success/Failure Screen** – Displayed after the customer clicks “I’ve made the transfer” (and optional verification completes) or if any error occurs while creating the request.
+3. **Success/Failure Screen** – Displayed after the customer clicks "I've made the transfer" (verification is called automatically). The `callback` function is invoked with the verification response. If any error occurs while creating the request, a failure screen is shown.
 
 ### Configuration
 
 | Option | Type | Required | Description |
 | --- | --- | --- | --- |
-| `gatewayUrl` | `string` | ✅ | Base URL for your gateway (`https://...`). The script appends `/payment/request`. |
+| `gatewayUrl` | `string` | ❌ | Base URL for your gateway (`https://...`). The script appends `/payment/request`. Defaults to `"https://dotapay.backend-dev.dotapay.ng/api/v1"` if not provided. |
 | `tenantToken` | `string` | ✅ | Token used for the `Authorization: Bearer ...` header. |
 | `payload` | `object` | ✅ | Body sent to the gateway (see sample above). |
 | `headers` | `Record<string,string>` | ❌ | Additional headers to merge with defaults. |
-| `onConfirmPayment` | `(paymentResponse) => Promise<Result> \| Result` | ❌ | Invoked when the customer taps “I’ve made the transfer”. Return `{ status: "success" \| "failure", message?: string }`. |
+| `callback` | `(verificationResponse) => void` | ❌ | Called with the verification response from `/payment/verify` after the customer taps "I've made the transfer". The response contains the transaction object with status (APPROVED, PENDING, etc.). |
 | `onClose` | `() => void` | ❌ | Fired whenever the modal closes. |
 | `theme` | `string \| Theme` | ❌ | Either the name of a built-in theme (`"dotapayDark"`) or an object that can override palette + logo (see below). |
 

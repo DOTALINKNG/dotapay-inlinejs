@@ -31,23 +31,23 @@
     <script src="./inline.js"></script>
     <script>
       document.getElementById("checkout").onclick = function () {
+        const randomId = Math.random().toString(36).substring(2, 15);
         DotapayInline.open({
-          gatewayUrl: "https://example-gateway.test",
           tenantToken: "TENANT_TOKEN",
           payload: {
-            public_key: "PUB_xxx",
+            public_key: "PUB_DP_DEMOCSHDGM2JZ9HPKYKHUZELUWA5MNUVV1WSFHYB",
             items: [
-              { unit_cost: 500, quantity: 2, split_group_id: "SG_DEMO_1" },
+              { unit_cost: 500, quantity: 2, split_group_id: null },
               { unit_cost: 1000, quantity: 1, split_group_id: null }
             ],
             customer_email: "alice@example.com",
             customer_name: "Alice Johnson",
-            order_id: "ORD202250d9s2s3X3s3113",
+            order_id: `ORD${randomId}`,
             fee_bearer: "merchant"
           },
-          theme: "dotapayDark",
-          onConfirmPayment: function () {
-            return { status: "success", message: "We are confirming your transfer." };
+          // theme: "dotapayDark",
+          callback: function (verificationResponse) {
+            console.log("Verification response:", verificationResponse);
           }
         });
       };

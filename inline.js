@@ -43,8 +43,8 @@
       ".dotapay-root{width:100%;height:100%;position:fixed;inset:0;margin:0;padding:24px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:var(--dotapay-overlay-bg,rgba(1,27,51,.65));font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;}" +
       ".dotapay-card{background:var(--dotapay-card-bg,#fff);border-radius:20px;max-width:430px;width:100%;padding:36px 36px 30px;box-shadow:var(--dotapay-card-shadow,0 20px 50px rgba(0,0,0,.25));position:relative;overflow:hidden;border:1px solid rgba(255,255,255,0.04);}" +
       ".dotapay-close{position:absolute;top:16px;right:16px;background:transparent;border:none;font-size:20px;cursor:pointer;color:var(--dotapay-subtext,#4c5667);}" +
-      ".dotapay-header{display:flex;align-items:center;gap:12px;margin-bottom:18px;}" +
-      ".dotapay-logo{height:75px;display:flex;align-items:center;}" +
+      ".dotapay-header{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:18px;}" +
+      ".dotapay-logo{height:80px;display:flex;align-items:center;}" +
       ".dotapay-title{font-size:22px;font-weight:600;color:var(--dotapay-text,#011b33);margin-bottom:8px;}" +
       ".dotapay-subtitle{font-size:14px;color:var(--dotapay-subtext,#4c5667);margin-bottom:24px;line-height:1.6;}" +
       ".dotapay-section{margin-bottom:18px;}" +
@@ -84,9 +84,6 @@
     if (!input || typeof input !== "object") {
       throw new Error("DotapayInline: options are required.");
     }
-    if (!input.gatewayUrl) {
-      throw new Error("DotapayInline: `gatewayUrl` is required.");
-    }
     if (!input.tenantToken) {
       throw new Error("DotapayInline: `tenantToken` is required.");
     }
@@ -94,12 +91,13 @@
       throw new Error("DotapayInline: `payload` is required.");
     }
     var theme = resolveTheme(input.theme);
+    var gatewayUrl = input.gatewayUrl || "https://dotapay.backend-dev.dotapay.ng/api/v1";
     return {
-      gatewayUrl: input.gatewayUrl.replace(/\/+$/, ""),
+      gatewayUrl: gatewayUrl.replace(/\/+$/, ""),
       tenantToken: input.tenantToken,
       payload: input.payload,
       headers: input.headers || {},
-      onConfirmPayment: typeof input.onConfirmPayment === "function" ? input.onConfirmPayment : null,
+      callback: typeof input.callback === "function" ? input.callback : null,
       onClose: typeof input.onClose === "function" ? input.onClose : null,
       theme: theme
     };
@@ -119,36 +117,44 @@
   }
 
   function extractBankDetails(raw) {
-    var data = raw && (raw.data || raw.payment || raw);
-    if (!data) return null;
-    var transfer =
-      data.bank_transfer ||
-      data.bankTransfer ||
-      data.transfer_instructions ||
-      data.transferInstructions ||
-      data.virtual_account ||
-      data.virtualAccount ||
-      data.recipient ||
-      data.bankDetails;
-    if (!transfer) return null;
+    if (!raw) return null;
 
-    var accountName = transfer.account_name || transfer.accountName || transfer.account_holder || transfer.accountHolder;
-    var accountNumber = transfer.account_number || transfer.accountNumber || transfer.nuban || transfer.iban;
-    var bankName = transfer.bank_name || transfer.bankName || transfer.financial_institution || transfer.institution;
-    var expiresAt = transfer.expires_at || transfer.expiresAt || transfer.expiry || transfer.expiry_time || transfer.expiryTime || data.expires_at;
-    var amount = data.amount || transfer.amount || data.total_amount || data.totalAmount;
-    var currency = data.currency || transfer.currency || data.currency_code || "NGN";
-    var reference = data.reference || data.payment_reference || data.paymentReference || transfer.reference;
+    // Check for error response
+    if (raw.error) {
+      return null;
+    }
+
+    // New API format: transaction.account_metadata
+    var transaction = raw.transaction;
+    if (!transaction) return null;
+
+    var accountMetadata = transaction.account_metadata;
+    if (!accountMetadata) return null;
+
+    var accountName = accountMetadata.account_name;
+    var accountNumber = accountMetadata.account_number;
+    var bankName = accountMetadata.bank_name;
+    var expiresAt = accountMetadata.expiry_date || accountMetadata.expires_at || accountMetadata.expiry || accountMetadata.expiry_time;
+    var amount = transaction.total_amount || transaction.amount || 0;
+    var currency = transaction.currency || "NGN";
+    var reference = transaction.reference || transaction.code || "N/A";
+    var transactionCode = transaction.code;
+
+    // Default to 4000 minutes if no expiration
+    if (!expiresAt) {
+      expiresAt = Date.now() + (4000 * 60 * 1000);
+    }
 
     return {
       accountName: accountName || "Temporary Account",
       accountNumber: accountNumber || "Unavailable",
       bankName: bankName || "Your Bank",
-      expiresAt: expiresAt || null,
-      amount: amount || 0,
+      expiresAt: expiresAt,
+      amount: amount,
       currency: currency,
-      reference: reference || data.order_id || data.orderId || "N/A",
-      raw: data
+      reference: reference,
+      transactionCode: transactionCode,
+      raw: raw
     };
   }
 
@@ -404,57 +410,33 @@
       this.options.headers
     );
 
-    // fetch(url, {
-    //   method: "POST",
-    //   headers: headers,
-    //   body: JSON.stringify(this.options.payload)
-    // })
-    //   .then(function (res) {
-    //     if (!res.ok) {
-    //       throw new Error("Gateway responded with " + res.status);
-    //     }
-    //     return res.json().catch(function () {
-    //       throw new Error("Invalid JSON response from gateway.");
-    //     });
-    //   })
-    //   .then(function (json) {
-    //     _this.paymentResponse = json;
-    //     var details = extractBankDetails(json);
-    //     if (!details) {
-    //       throw new Error("Gateway did not return bank transfer instructions.");
-    //     }
-    //     _this.renderBankDetails(details);
-    //   })
-    //   .catch(function (err) {
-    //     _this.renderFailure(err.message);
-    //   });
+    fetch(url, {
+      method: "POST",
+      headers: headers,
+      body: JSON.stringify(this.options.payload)
+    })
+      .then(function (res) {
+        return res.json().catch(function () {
+          throw new Error("Invalid JSON response from gateway.");
+        });
+      })
+      .then(function (json) {
+        _this.paymentResponse = json;
 
-
-    const dummydetails = {
-      accountName: "John Doe",
-      accountNumber: "1234567890",
-      bankName: "Bank of America",
-      expiresAt: Date.now() + 1000 * 60 * 60 * 24,
-      amount: 1000,
-      currency: "NGN",
-      reference: "1234567890",
-      raw: {
-        data: {
-          bank_transfer: {
-            account_name: "John Doe",
-            account_number: "1234567890",
-          }
-        },
-        payment: {
-          amount: 1000,
-          currency: "NGN",
-          reference: "1234567890"
+        // Check for error response
+        if (json.error) {
+          throw new Error(json.error || "An error occurred while processing your request.");
         }
-      }
-    };
 
-    _this.renderBankDetails(dummydetails);
-
+        var details = extractBankDetails(json);
+        if (!details) {
+          throw new Error("Gateway did not return bank transfer instructions.");
+        }
+        _this.renderBankDetails(details);
+      })
+      .catch(function (err) {
+        _this.renderFailure(err.message);
+      });
   };
 
   DotapayInlineSession.prototype.bindCloseButton = function () {
@@ -492,26 +474,86 @@
   DotapayInlineSession.prototype.handleConfirm = function () {
     var _this = this;
     this.renderSpinner("Hold on while we note your transfer...");
-    var hook = this.options.onConfirmPayment || noop;
-    var maybePromise;
-    try {
-      maybePromise = hook(this.paymentResponse);
-    } catch (err) {
-      this.renderFailure(err.message);
+
+    // Get transaction code from payment response
+    var transactionCode = null;
+    if (this.paymentResponse && this.paymentResponse.transaction) {
+      transactionCode = this.paymentResponse.transaction.code;
+    }
+
+    if (!transactionCode) {
+      this.renderFailure("Unable to verify payment. Transaction code not found.");
       return;
     }
 
-    if (maybePromise && typeof maybePromise.then === "function") {
-      maybePromise
-        .then(function (result) {
-          _this.resolveConfirmation(result);
-        })
-        .catch(function (err) {
-          _this.renderFailure(err && err.message ? err.message : "Unable to confirm payment.");
+    // Call verification endpoint
+    var url = this.options.gatewayUrl + "/payment/verify";
+    var headers = Object.assign(
+      {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        Authorization: "Bearer " + this.options.tenantToken
+      },
+      this.options.headers
+    );
+
+    fetch(url, {
+      method: "POST",
+      headers: headers,
+      body: JSON.stringify({
+        identifier: transactionCode
+      })
+    })
+      .then(function (res) {
+        return res.json().catch(function () {
+          throw new Error("Invalid JSON response from gateway.");
         });
-    } else {
-      this.resolveConfirmation(maybePromise);
-    }
+      })
+      .then(function (json) {
+        // Check for error response
+        if (json.error) {
+          _this.renderFailure(json.error || "Payment verification failed.");
+          return;
+        }
+
+        // Get transaction from response
+        var transaction = json.transaction || json;
+        if (!transaction) {
+          _this.renderFailure("Invalid verification response.");
+          return;
+        }
+
+        var status = transaction.status;
+
+        // Call callback with verification response if provided
+        if (_this.options.callback) {
+          try {
+            _this.options.callback(json);
+          } catch (err) {
+            console.error("DotapayInline: Error in callback", err);
+          }
+        }
+
+        // Handle different transaction statuses
+        if (status === "APPROVED") {
+          _this.renderSuccess(
+            "Payment successful",
+            "Your payment has been confirmed."
+          );
+        } else if (status === "PENDING") {
+          // Show pending message
+          _this.renderSuccess(
+            "We are confirming your transfer.",
+            "We're checking with your bank. You'll get a confirmation shortly."
+          );
+        } else {
+          // Any other status (FAILED, REJECTED, etc.) shows failure
+          _this.renderFailure("Payment verification failed. Please try again or contact support.");
+        }
+      })
+      .catch(function (err) {
+        _this.renderFailure(err.message || "Unable to verify payment. Please try again.");
+      });
   };
 
   DotapayInlineSession.prototype.resolveConfirmation = function (result) {
