@@ -62,9 +62,13 @@
       ".dotapay-spinner:before{content:'';width:48px;height:48px;border-radius:50%;border:4px solid rgba(255,255,255,0.08);border-top-color:var(--dotapay-brand," +
       DEFAULT_BRAND +
       ");animation:dotapay-rotate 1s linear infinite;}" +
+      ".dotapay-status{display:flex;flex-direction:column;align-items:center;text-align:center;margin-top:16px;}" +
       ".dotapay-status__icon{font-size:48px;margin-bottom:16px;}" +
       ".dotapay-status__icon--success{color:var(--dotapay-status-success,#1f9d4b);}" +
       ".dotapay-status__icon--error{color:var(--dotapay-status-error,#d7263d);}" +
+      ".dotapay-icon-ring{width:72px;height:72px;border-radius:22px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;box-shadow:0 15px 30px rgba(0,0,0,.35);}" +
+      ".dotapay-icon-ring svg{width:32px;height:32px;display:block;}" +
+      ".dotapay-icon-ring--success{background:linear-gradient(135deg,#7f5dff,#b483ff);}" +
       ".dotapay-status__message{font-size:18px;color:var(--dotapay-text,#011b33);margin-bottom:8px;font-weight:600;}" +
       ".dotapay-status__detail{font-size:14px;color:var(--dotapay-subtext,#4c5667);line-height:1.6;}" +
       ".dotapay-secured{margin-top:28px;font-size:12px;text-transform:uppercase;letter-spacing:.3em;color:var(--dotapay-subtext,#90a0b7);text-align:center;opacity:.8;}" +
@@ -161,9 +165,21 @@
   function formatCountdown(expiryMs) {
     var diff = Math.max(0, expiryMs - Date.now());
     var totalSeconds = Math.floor(diff / 1000);
-    var minutes = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
-    var seconds = String(totalSeconds % 60).padStart(2, "0");
-    return minutes + ":" + seconds;
+    var days = Math.floor(totalSeconds / 86400);
+    var hours = Math.floor((totalSeconds % 86400) / 3600);
+    var minutes = Math.floor((totalSeconds % 3600) / 60);
+    var seconds = totalSeconds % 60;
+
+    if (days > 0) {
+      return days + "d " + hours + "h";
+    }
+    if (hours > 0) {
+      return hours + "h " + minutes + "m";
+    }
+    if (minutes > 0) {
+      return minutes + "m " + seconds + "s";
+    }
+    return seconds + "s";
   }
 
   function parseExpiry(expiresAt) {
@@ -338,11 +354,19 @@
       '<div class="dotapay-card">' +
       buildHeader(this.theme) +
       '<button class="dotapay-close" data-close>&times;</button>' +
-      '<div class="dotapay-status__icon dotapay-status__icon--success">✔</div>' +
-      '<div class="dotapay-status__message">Payment noted</div>' +
+      '<div class="dotapay-status">' +
+      '<div class="dotapay-icon-ring dotapay-icon-ring--success">' +
+      '<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">' +
+      '<circle cx="32" cy="32" r="30" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.25)" stroke-width="2"/>' +
+      '<path d="M22.5 31.5l6.3 6.4 12.7-15.2" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>' +
+      "</svg>" +
+      "</div>" +
+      '<div class="dotapay-status__message">' +
+      (message || "Payment noted") +
+      "</div>" +
       '<div class="dotapay-status__detail">' +
-      (message || "We will notify you once the transfer is confirmed.") +
-      (detail ? "<br>" + detail : "") +
+      (detail || "We’re checking with your bank. You’ll get a confirmation shortly.") +
+      "</div>" +
       "</div>" +
       '<div class="dotapay-actions"><button class="dotapay-primary" data-close>Close</button></div>' +
       buildSecuredFooter(this.theme) +
