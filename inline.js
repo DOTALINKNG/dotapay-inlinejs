@@ -48,6 +48,7 @@
       ".dotapay-title{font-size:22px;font-weight:600;color:var(--dotapay-text,#011b33);margin-bottom:8px;}" +
       ".dotapay-subtitle{font-size:14px;color:var(--dotapay-subtext,#4c5667);margin-bottom:24px;line-height:1.6;}" +
       ".dotapay-section{margin-bottom:18px;}" +
+      ".dotapay-section--center{display:flex;justify-content:center;}" +
       ".dotapay-label{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--dotapay-subtext,#70808f);margin-bottom:4px;}" +
       ".dotapay-value{font-size:18px;font-weight:600;color:var(--dotapay-text,#011b33);word-break:break-all;}" +
       ".dotapay-countdown{font-size:14px;font-weight:600;color:var(--dotapay-countdown-text,#c26b00);background:var(--dotapay-countdown-bg,rgba(194,107,0,.1));padding:12px 16px;border-radius:12px;display:inline-flex;align-items:center;gap:8px;}" +
@@ -226,7 +227,9 @@
     this.frameDoc = null;
     this.root = null;
     this.countdownInterval = null;
+    this.verificationInterval = null;
     this.paymentResponse = null;
+    this.expiresAt = null;
     this.destroyed = false;
   }
 
@@ -312,9 +315,35 @@
     this.bindCloseButton();
   };
 
+  DotapayInlineSession.prototype.renderPolling = function () {
+    if (!this.root) return;
+    var expiresMs = this.expiresAt;
+    var countdownMarkup = expiresMs
+      ? '<div class="dotapay-countdown" data-countdown="' + expiresMs + '">Please wait for ' + formatCountdown(expiresMs) + "</div>"
+      : "";
+
+    this.root.innerHTML =
+      '<div class="dotapay-card">' +
+      buildHeader(this.theme) +
+      '<button class="dotapay-close" data-close>&times;</button>' +
+      '<div class="dotapay-spinner">' +
+      "<p>We're waiting to receive your transfer. This can take up to a minute</p>" +
+      "</div>" +
+      (countdownMarkup ? '<div class="dotapay-section dotapay-section--center">' + countdownMarkup + "</div>" : "") +
+      buildSecuredFooter(this.theme) +
+      "</div>";
+    this.bindCloseButton();
+
+    // Start countdown if we have expiry time
+    if (expiresMs) {
+      this.startCountdown(expiresMs, "Please wait for ");
+    }
+  };
+
   DotapayInlineSession.prototype.renderBankDetails = function (details) {
     if (!this.root) return;
     var expiresMs = parseExpiry(details.expiresAt);
+    this.expiresAt = expiresMs; // Store expiry time for polling
     var countdownMarkup = expiresMs
       ? '<div class="dotapay-countdown" data-countdown="' + expiresMs + '">Expires in ' + formatCountdown(expiresMs) + "</div>"
       : "";
@@ -356,6 +385,7 @@
   DotapayInlineSession.prototype.renderSuccess = function (message, detail) {
     if (!this.root) return;
     this.clearCountdown();
+    this.clearVerificationInterval();
     this.root.innerHTML =
       '<div class="dotapay-card">' +
       buildHeader(this.theme) +
@@ -383,6 +413,7 @@
   DotapayInlineSession.prototype.renderFailure = function (message) {
     if (!this.root) return;
     this.clearCountdown();
+    this.clearVerificationInterval();
     this.root.innerHTML =
       '<div class="dotapay-card">' +
       buildHeader(this.theme) +
@@ -471,9 +502,15 @@
     };
   };
 
-  DotapayInlineSession.prototype.handleConfirm = function () {
+  DotapayInlineSession.prototype.verifyPayment = function (showSpinner) {
     var _this = this;
-    this.renderSpinner("Hold on while we note your transfer...");
+
+    if (showSpinner) {
+      this.renderSpinner("Hold on while we note your transfer...");
+    }
+
+    // Cancel any pending scheduled poll since we're actively verifying now
+    this.clearVerificationInterval();
 
     // Get transaction code from payment response
     var transactionCode = null;
@@ -482,6 +519,7 @@
     }
 
     if (!transactionCode) {
+      this.clearVerificationInterval();
       this.renderFailure("Unable to verify payment. Transaction code not found.");
       return;
     }
@@ -505,6 +543,14 @@
       })
     })
       .then(function (res) {
+        // Check if response is ok
+        if (!res.ok) {
+          return res.json().then(function (errorJson) {
+            throw new Error(errorJson.error || "Gateway responded with " + res.status);
+          }).catch(function () {
+            throw new Error("Gateway responded with " + res.status);
+          });
+        }
         return res.json().catch(function () {
           throw new Error("Invalid JSON response from gateway.");
         });
@@ -512,6 +558,7 @@
       .then(function (json) {
         // Check for error response
         if (json.error) {
+          _this.clearVerificationInterval();
           _this.renderFailure(json.error || "Payment verification failed.");
           return;
         }
@@ -519,41 +566,90 @@
         // Get transaction from response
         var transaction = json.transaction || json;
         if (!transaction) {
+          _this.clearVerificationInterval();
           _this.renderFailure("Invalid verification response.");
           return;
         }
 
         var status = transaction.status;
-
-        // Call callback with verification response if provided
-        if (_this.options.callback) {
-          try {
-            _this.options.callback(json);
-          } catch (err) {
-            console.error("DotapayInline: Error in callback", err);
-          }
-        }
+        var isExpired = _this.expiresAt && Date.now() > _this.expiresAt;
 
         // Handle different transaction statuses
         if (status === "APPROVED") {
+          _this.clearVerificationInterval();
           _this.renderSuccess(
             "Payment successful",
             "Your payment has been confirmed."
           );
+          // Call callback with verification response if provided
+          if (_this.options.callback) {
+            try {
+              _this.options.callback(json);
+            } catch (err) {
+              console.error("DotapayInline: Error in callback", err);
+            }
+          }
         } else if (status === "PENDING") {
-          // Show pending message
-          _this.renderSuccess(
-            "We are confirming your transfer.",
-            "We're checking with your bank. You'll get a confirmation shortly."
-          );
+          // If expired and still PENDING, call callback and show failure
+          if (isExpired) {
+            _this.clearVerificationInterval();
+            _this.renderFailure("Payment window has expired. Please start a new payment.");
+            // Call callback when expired and status is still PENDING
+            if (_this.options.callback) {
+              try {
+                _this.options.callback(json);
+              } catch (err) {
+                console.error("DotapayInline: Error in callback", err);
+              }
+            }
+          } else {
+            // Show polling view (only on first call)
+            if (showSpinner) {
+              _this.renderPolling();
+            }
+            // Schedule the next poll 30s after this response
+            _this.startVerificationPolling();
+            // Don't call callback for PENDING when not expired
+          }
         } else {
           // Any other status (FAILED, REJECTED, etc.) shows failure
+          _this.clearVerificationInterval();
           _this.renderFailure("Payment verification failed. Please try again or contact support.");
+          // Call callback with verification response if provided
+          if (_this.options.callback) {
+            try {
+              _this.options.callback(json);
+            } catch (err) {
+              console.error("DotapayInline: Error in callback", err);
+            }
+          }
         }
       })
       .catch(function (err) {
+        _this.clearVerificationInterval();
         _this.renderFailure(err.message || "Unable to verify payment. Please try again.");
       });
+  };
+
+  DotapayInlineSession.prototype.handleConfirm = function () {
+    this.verifyPayment(true);
+  };
+
+  DotapayInlineSession.prototype.startVerificationPolling = function () {
+    var _this = this;
+    this.clearVerificationInterval(); // Clear any existing timeout
+
+    this.verificationInterval = setTimeout(function () {
+      if (_this.destroyed) return;
+      _this.verifyPayment(false);
+    }, 30000); // Poll every 30 seconds
+  };
+
+  DotapayInlineSession.prototype.clearVerificationInterval = function () {
+    if (this.verificationInterval) {
+      clearTimeout(this.verificationInterval);
+      this.verificationInterval = null;
+    }
   };
 
   DotapayInlineSession.prototype.resolveConfirmation = function (result) {
@@ -564,20 +660,36 @@
     this.renderSuccess(result && result.message, result && result.detail);
   };
 
-  DotapayInlineSession.prototype.startCountdown = function (expiresMs) {
+  DotapayInlineSession.prototype.startCountdown = function (expiresMs, prefix) {
     var self = this;
     if (!this.frameDoc) return;
     var label = this.frameDoc.querySelector("[data-countdown]");
     if (!label) return;
     this.clearCountdown();
+    // Extract prefix from existing text if not provided
+    var countdownPrefix = prefix;
+    if (!countdownPrefix && label.textContent) {
+      // Try to extract prefix (text before the time)
+      var match = label.textContent.match(/^(.+?)\s*\d/);
+      if (match) {
+        countdownPrefix = match[1] + " ";
+      }
+    }
+    countdownPrefix = countdownPrefix || "Expires in ";
     var update = function () {
       var remaining = expiresMs - Date.now();
       if (remaining <= 0) {
         label.textContent = "Expired";
         self.clearCountdown();
+        // Stop polling if active and make one final verification call
+        if (self.verificationInterval) {
+          self.clearVerificationInterval();
+          // Make one final verification call to get status and call callback if still PENDING
+          self.verifyPayment(false);
+        }
         return;
       }
-      label.textContent = "Expires in " + formatCountdown(expiresMs);
+      label.textContent = countdownPrefix + formatCountdown(expiresMs);
     };
     update();
     this.countdownInterval = setInterval(update, 1000);
@@ -594,6 +706,7 @@
     if (this.destroyed) return;
     this.destroyed = true;
     this.clearCountdown();
+    this.clearVerificationInterval();
     if (this.overlay && this.overlay.parentNode) {
       this.overlay.parentNode.removeChild(this.overlay);
     }
