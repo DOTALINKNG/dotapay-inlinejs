@@ -52,6 +52,13 @@
       ".dotapay-label{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--dotapay-subtext,#70808f);margin-bottom:4px;}" +
       ".dotapay-value{font-size:18px;font-weight:600;color:var(--dotapay-text,#011b33);word-break:break-all;}" +
       ".dotapay-countdown{font-size:14px;font-weight:600;color:var(--dotapay-countdown-text,#c26b00);background:var(--dotapay-countdown-bg,rgba(194,107,0,.1));padding:12px 16px;border-radius:12px;display:inline-flex;align-items:center;gap:8px;}" +
+      ".dotapay-amount-box{background:var(--dotapay-primary-bg," +
+      DEFAULT_BRAND +
+      ");border-radius:12px;padding:20px;margin-bottom:24px;display:flex;justify-content:space-between;align-items:center;}" +
+      ".dotapay-amount-box__label{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,0.8);margin-bottom:8px;}" +
+      ".dotapay-amount-box__value{font-size:28px;font-weight:700;color:var(--dotapay-primary-text,#fff);}" +
+      ".dotapay-amount-box__left{flex:1;}" +
+      ".dotapay-amount-box__right{display:flex;align-items:center;gap:8px;}" +
       ".dotapay-actions{margin-top:24px;display:flex;flex-direction:column;gap:12px;}" +
       ".dotapay-primary{background:var(--dotapay-primary-bg," +
       DEFAULT_BRAND +
@@ -351,12 +358,16 @@
       '<div class="dotapay-card">' +
       buildHeader(this.theme) +
       '<button class="dotapay-close" data-close>&times;</button>' +
-      '<div class="dotapay-title">Complete your transfer</div>' +
-      '<div class="dotapay-subtitle">Send exactly ' +
+      '<div class="dotapay-amount-box">' +
+      '<div class="dotapay-amount-box__left">' +
+      '<div class="dotapay-amount-box__label">Amount to send</div>' +
+      '<div class="dotapay-amount-box__value">' +
       formatAmount(details.amount, details.currency) +
-      " to the temporary account below. Your payment reference is " +
-      details.reference +
-      ".</div>" +
+      "</div>" +
+      "</div>" +
+      (countdownMarkup ? '<div class="dotapay-amount-box__right">' + countdownMarkup + "</div>" : "") +
+      "</div>" +
+      '<div class="dotapay-subtitle">Send exactly the amount above to this temporary account. Use the reference below so we can match your payment.</div>' +
       '<div class="dotapay-section"><div class="dotapay-label">Account Name</div><div class="dotapay-value">' +
       details.accountName +
       "</div></div>" +
@@ -366,9 +377,13 @@
       '<div class="dotapay-section"><div class="dotapay-label">Bank</div><div class="dotapay-value">' +
       details.bankName +
       "</div></div>" +
-      (countdownMarkup ? '<div class="dotapay-section">' + countdownMarkup + "</div>" : "") +
+      '<div class="dotapay-section"><div class="dotapay-label">Payment reference</div><div class="dotapay-value">' +
+      details.reference +
+      "</div></div>" +
       '<div class="dotapay-actions">' +
-      '<button class="dotapay-primary" data-confirm> I’ve made the transfer </button>' +
+      '<button class="dotapay-primary" data-confirm> I\'ve made the transfer – ' +
+      formatAmount(details.amount, details.currency) +
+      ' </button>' +
       '<button class="dotapay-secondary" data-close>Cancel</button>' +
       "</div>" +
       buildSecuredFooter(this.theme) +
