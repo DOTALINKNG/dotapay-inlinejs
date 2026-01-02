@@ -657,7 +657,7 @@
     this.verificationInterval = setTimeout(function () {
       if (_this.destroyed) return;
       _this.verifyPayment(false);
-    }, 30000); // Poll every 30 seconds
+    }, 2000); // Poll every 2 seconds
   };
 
   DotapayInlineSession.prototype.clearVerificationInterval = function () {
