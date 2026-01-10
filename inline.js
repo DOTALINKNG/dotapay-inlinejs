@@ -95,15 +95,22 @@
     if (!input.tenantToken) {
       throw new Error("DotapayInline: `tenantToken` is required.");
     }
-    if (!input.payload || typeof input.payload !== "object") {
-      throw new Error("DotapayInline: `payload` is required.");
+    var identifier =
+      input.identifier ||
+      input.transactionCode ||
+      input.transactionReference ||
+      input.reference;
+    var hasPayload = input.payload && typeof input.payload === "object";
+    if (!identifier && !hasPayload) {
+      throw new Error("DotapayInline: either `payload` or `identifier` is required.");
     }
     var theme = resolveTheme(input.theme);
     var gatewayUrl = input.gatewayUrl || "https://dotapay.backend-dev.dotapay.ng/api/v1";
     return {
       gatewayUrl: gatewayUrl.replace(/\/+$/, ""),
       tenantToken: input.tenantToken,
-      payload: input.payload,
+      payload: hasPayload ? input.payload : null,
+      identifier: identifier || null,
       headers: input.headers || {},
       callback: typeof input.callback === "function" ? input.callback : null,
       onClose: typeof input.onClose === "function" ? input.onClose : null,
@@ -236,6 +243,10 @@
     this.countdownInterval = null;
     this.verificationInterval = null;
     this.paymentResponse = null;
+    this.identifier = this.options.identifier || null;
+    this.successUrl = null;
+    this.failureUrl = null;
+    this.redirected = false;
     this.expiresAt = null;
     this.destroyed = false;
   }
@@ -270,8 +281,13 @@
 
       self.root = self.frameDoc.body.querySelector(".dotapay-root");
       self.attachClose();
-      self.renderSpinner("Creating payment request...");
-      self.createPaymentRequest();
+      var loadingMessage = self.identifier ? "Fetching payment details..." : "Creating payment request...";
+      self.renderSpinner(loadingMessage);
+      if (self.identifier) {
+        self.loadTransactionByReference();
+      } else {
+        self.createPaymentRequest();
+      }
     };
 
     if (this.frame.contentDocument && this.frame.contentDocument.readyState === "complete") {
@@ -445,8 +461,76 @@
     this.bindRetryButton();
   };
 
+  DotapayInlineSession.prototype.applyTransactionMetadata = function (transaction) {
+    if (!transaction) return;
+    if (transaction.code) {
+      this.identifier = this.identifier || transaction.code;
+      this.options.identifier = this.options.identifier || transaction.code;
+    }
+    var successUrl = transaction.success_url || transaction.successUrl;
+    var failureUrl = transaction.failure_url || transaction.failureUrl;
+    if (typeof successUrl === "string" && successUrl.trim()) {
+      this.successUrl = successUrl.trim();
+    }
+    if (typeof failureUrl === "string" && failureUrl.trim()) {
+      this.failureUrl = failureUrl.trim();
+    }
+  };
+
+  DotapayInlineSession.prototype.getTransactionIdentifier = function () {
+    if (this.identifier && typeof this.identifier === "string" && this.identifier.trim()) {
+      return this.identifier.trim();
+    }
+    if (this.paymentResponse && this.paymentResponse.transaction && this.paymentResponse.transaction.code) {
+      return this.paymentResponse.transaction.code;
+    }
+    return null;
+  };
+
+  DotapayInlineSession.prototype.redirectToUrl = function (url) {
+    if (!url || this.redirected) return;
+    this.redirected = true;
+    this.close(true);
+    try {
+      global.location.assign(url);
+    } catch (err) {
+      global.location.href = url;
+    }
+  };
+
+  DotapayInlineSession.prototype.triggerCallback = function (payload) {
+    if (!this.options.callback) return;
+    try {
+      this.options.callback(payload);
+    } catch (err) {
+      console.error("DotapayInline: Error in callback", err);
+    }
+  };
+
+  DotapayInlineSession.prototype.handlePaymentSuccess = function (payload) {
+    this.clearVerificationInterval();
+    this.renderSuccess("Payment successful", "Your payment has been confirmed.");
+    this.triggerCallback(payload);
+    this.redirectToUrl(this.successUrl);
+  };
+
+  DotapayInlineSession.prototype.handlePaymentFailure = function (payload, message) {
+    this.clearVerificationInterval();
+    this.renderFailure(message || "Payment verification failed. Please try again or contact support.");
+    this.triggerCallback(payload);
+    this.redirectToUrl(this.failureUrl);
+  };
+
+  DotapayInlineSession.prototype.handlePaymentTimeout = function (payload) {
+    this.handlePaymentFailure(payload, "Payment window has expired. Please start a new payment.");
+  };
+
   DotapayInlineSession.prototype.createPaymentRequest = function () {
     var _this = this;
+    if (!this.options.payload) {
+      this.renderFailure("Payment payload is missing.");
+      return;
+    }
     var url = this.options.gatewayUrl + "/payment/request";
     var headers = Object.assign(
       {
@@ -468,6 +552,8 @@
       })
       .then(function (json) {
         _this.paymentResponse = json;
+        var transaction = json.transaction || json;
+        _this.applyTransactionMetadata(transaction);
 
         // Check for error response
         if (json.error) {
@@ -482,6 +568,83 @@
       })
       .catch(function (err) {
         _this.renderFailure(err.message);
+      });
+  };
+
+  DotapayInlineSession.prototype.loadTransactionByReference = function () {
+    var _this = this;
+    var identifier = this.getTransactionIdentifier();
+    if (!identifier) {
+      this.renderFailure("Transaction reference is required.");
+      return;
+    }
+
+    var url = this.options.gatewayUrl + "/payment/verify";
+    var headers = Object.assign(
+      {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        Authorization: "Bearer " + this.options.tenantToken
+      },
+      this.options.headers
+    );
+
+    fetch(url, {
+      method: "POST",
+      headers: headers,
+      body: JSON.stringify({ identifier: identifier })
+    })
+      .then(function (res) {
+        if (!res.ok) {
+          return res
+            .json()
+            .then(function (errorJson) {
+              throw new Error(errorJson.error || "Gateway responded with " + res.status);
+            })
+            .catch(function () {
+              throw new Error("Gateway responded with " + res.status);
+            });
+        }
+        return res.json().catch(function () {
+          throw new Error("Invalid JSON response from gateway.");
+        });
+      })
+      .then(function (json) {
+        _this.paymentResponse = json;
+        var transaction = json.transaction || json;
+        _this.applyTransactionMetadata(transaction);
+
+        if (json.error) {
+          throw new Error(json.error || "Unable to load transaction.");
+        }
+        if (!transaction) {
+          throw new Error("Invalid transaction response.");
+        }
+
+        // If already processed, route accordingly
+        if (transaction.status === "APPROVED") {
+          _this.handlePaymentSuccess(json);
+          return;
+        }
+        if (transaction.status && transaction.status !== "PENDING") {
+          _this.handlePaymentFailure(json, "Payment is not pending.");
+          return;
+        }
+
+        var details = extractBankDetails(json);
+        if (!details) {
+          throw new Error("Could not find bank transfer instructions for this transaction.");
+        }
+        var expiresMs = parseExpiry(details.expiresAt);
+        if (expiresMs && Date.now() > expiresMs) {
+          _this.expiresAt = expiresMs;
+          _this.handlePaymentTimeout(json);
+          return;
+        }
+        _this.renderBankDetails(details);
+      })
+      .catch(function (err) {
+        _this.renderFailure(err.message || "Unable to fetch transaction details.");
       });
   };
 
@@ -503,7 +666,11 @@
     if (!retry) return;
     retry.onclick = function () {
       self.renderSpinner("Retrying...");
-      self.createPaymentRequest();
+      if (self.identifier && !self.options.payload) {
+        self.loadTransactionByReference();
+      } else {
+        self.createPaymentRequest();
+      }
     };
   };
 
@@ -527,14 +694,8 @@
     // Cancel any pending scheduled poll since we're actively verifying now
     this.clearVerificationInterval();
 
-    // Get transaction code from payment response
-    var transactionCode = null;
-    if (this.paymentResponse && this.paymentResponse.transaction) {
-      transactionCode = this.paymentResponse.transaction.code;
-    }
-
+    var transactionCode = this.getTransactionIdentifier();
     if (!transactionCode) {
-      this.clearVerificationInterval();
       this.renderFailure("Unable to verify payment. Transaction code not found.");
       return;
     }
@@ -571,73 +732,41 @@
         });
       })
       .then(function (json) {
-        // Check for error response
         if (json.error) {
-          _this.clearVerificationInterval();
-          _this.renderFailure(json.error || "Payment verification failed.");
+          _this.handlePaymentFailure(json, json.error || "Payment verification failed.");
           return;
         }
 
         // Get transaction from response
         var transaction = json.transaction || json;
         if (!transaction) {
-          _this.clearVerificationInterval();
-          _this.renderFailure("Invalid verification response.");
+          _this.handlePaymentFailure(json, "Invalid verification response.");
           return;
         }
 
+        _this.applyTransactionMetadata(transaction);
         var status = transaction.status;
         var isExpired = _this.expiresAt && Date.now() > _this.expiresAt;
 
         // Handle different transaction statuses
         if (status === "APPROVED") {
-          _this.clearVerificationInterval();
-          _this.renderSuccess(
-            "Payment successful",
-            "Your payment has been confirmed."
-          );
-          // Call callback with verification response if provided
-          if (_this.options.callback) {
-            try {
-              _this.options.callback(json);
-            } catch (err) {
-              console.error("DotapayInline: Error in callback", err);
-            }
-          }
+          _this.handlePaymentSuccess(json);
         } else if (status === "PENDING") {
           // If expired and still PENDING, call callback and show failure
           if (isExpired) {
-            _this.clearVerificationInterval();
-            _this.renderFailure("Payment window has expired. Please start a new payment.");
-            // Call callback when expired and status is still PENDING
-            if (_this.options.callback) {
-              try {
-                _this.options.callback(json);
-              } catch (err) {
-                console.error("DotapayInline: Error in callback", err);
-              }
-            }
+            _this.handlePaymentTimeout(json);
           } else {
             // Show polling view (only on first call)
             if (showSpinner) {
               _this.renderPolling();
             }
-            // Schedule the next poll 30s after this response
+            // Schedule the next poll shortly after this response
             _this.startVerificationPolling();
             // Don't call callback for PENDING when not expired
           }
         } else {
           // Any other status (FAILED, REJECTED, etc.) shows failure
-          _this.clearVerificationInterval();
-          _this.renderFailure("Payment verification failed. Please try again or contact support.");
-          // Call callback with verification response if provided
-          if (_this.options.callback) {
-            try {
-              _this.options.callback(json);
-            } catch (err) {
-              console.error("DotapayInline: Error in callback", err);
-            }
-          }
+          _this.handlePaymentFailure(json, "Payment verification failed. Please try again or contact support.");
         }
       })
       .catch(function (err) {
@@ -696,12 +825,9 @@
       if (remaining <= 0) {
         label.textContent = "Expired";
         self.clearCountdown();
-        // Stop polling if active and make one final verification call
-        if (self.verificationInterval) {
-          self.clearVerificationInterval();
-          // Make one final verification call to get status and call callback if still PENDING
-          self.verifyPayment(false);
-        }
+        // Make one final verification call to get status and handle redirect/failure
+        self.clearVerificationInterval();
+        self.verifyPayment(false);
         return;
       }
       label.textContent = countdownPrefix + formatCountdown(expiresMs);
@@ -792,5 +918,3 @@
     return overlay;
   }
 })(window, document);
-
-

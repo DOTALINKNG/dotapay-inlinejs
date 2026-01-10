@@ -39,6 +39,22 @@ Build and render a lightweight inline checkout experience (similar to Paystack I
 </script>
 ```
 
+#### Using an existing transaction reference (standard payment)
+
+Skip `/payment/request` and load a pending transaction directly via its reference (e.g. `PAY_DEMO_TZJJDG4I6ABE`). On success you’ll be redirected to `success_url` if the transaction provides one; on timeout/failure you’ll be sent to `failure_url` when available.
+
+```html
+<script>
+  DotapayInline.open({
+    tenantToken: "TENANT_TOKEN",
+    identifier: "PAY_DEMO_TZJJDG4I6ABE",
+    callback: function (verificationResponse) {
+      console.log("Verification response:", verificationResponse);
+    }
+  });
+</script>
+```
+
 ### Screens & Flow
 
 1. **Spinner Screen** – Shown immediately while initiating `/payment/request`.
@@ -51,11 +67,13 @@ Build and render a lightweight inline checkout experience (similar to Paystack I
 | --- | --- | --- | --- |
 | `gatewayUrl` | `string` | ❌ | Base URL for your gateway (`https://...`). The script appends `/payment/request`. Defaults to `"https://dotapay.backend-dev.dotapay.ng/api/v1"` if not provided. |
 | `tenantToken` | `string` | ✅ | Token used for the `Authorization: Bearer ...` header. |
-| `payload` | `object` | ✅ | Body sent to the gateway (see sample above). |
+| `payload` | `object` | ✅* | Body sent to the gateway (see sample above). |
+| `identifier` | `string` | ✅* | Existing transaction code (e.g. `PAY_DEMO_TZJJDG4I6ABE`) to fetch via `/payment/verify`. Use this when you already created a transaction server-side. |
 | `headers` | `Record<string,string>` | ❌ | Additional headers to merge with defaults. |
 | `callback` | `(verificationResponse) => void` | ❌ | Called with the verification response from `/payment/verify` after the customer taps "I've made the transfer". The response contains the transaction object with status (APPROVED, PENDING, etc.). |
 | `onClose` | `() => void` | ❌ | Fired whenever the modal closes. |
 | `theme` | `string \| Theme` | ❌ | Either the name of a built-in theme (`"dotapayDark"`) or an object that can override palette + logo (see below). |
+<sub>*Provide either `payload` or `identifier`.</sub>
 
 #### Theme system
 
@@ -77,4 +95,3 @@ The checkout now renders inside its own iframe, so host-page CSS cannot bleed in
 ### Development
 
 This repository is intentionally dependency-free; edit `inline.js` directly. Use any static server to load an HTML file that references the script while you exercise the flow manually.
-
