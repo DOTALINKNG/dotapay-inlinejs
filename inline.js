@@ -123,7 +123,7 @@
       throw new Error("DotapayInline: either `payload` or `identifier` is required.");
     }
     var theme = resolveTheme(input.theme);
-    var gatewayUrl = input.gatewayUrl || "https://dotapay.backend-dev.dotapay.ng/api/v1";
+    var gatewayUrl = input.gatewayUrl || "https://api.backend.dotapay.ng/api/v1";
     return {
       gatewayUrl: gatewayUrl.replace(/\/+$/, ""),
       tenantToken: input.tenantToken,
@@ -470,10 +470,12 @@
       '<div class="dotapay-card">' +
       buildHeader(this.theme, this.businessInfo) +
       '<button class="dotapay-close" data-close>&times;</button>' +
+      '<div class="dotapay-status">' +
       '<div class="dotapay-status__icon dotapay-status__icon--error">!</div>' +
       '<div class="dotapay-status__message">Something went wrong</div>' +
       '<div class="dotapay-status__detail">' +
       (message || "Unable to process your request. Please try again.") +
+      "</div>" +
       "</div>" +
       '<div class="dotapay-actions"><button class="dotapay-primary" data-retry>Try again</button><button class="dotapay-secondary" data-close>Close</button></div>' +
       buildSecuredFooter(this.theme) +
@@ -643,6 +645,14 @@
         var transaction = json.transaction || json;
         _this.applyTransactionMetadata(transaction);
 
+        // Extract business info
+        if (transaction.business) {
+          _this.businessInfo = {
+            name: transaction.business.name || null,
+            logo: transaction.business.logo || null
+          };
+        }
+
         if (json.error) {
           throw new Error(json.error || "Unable to load transaction.");
         }
@@ -695,11 +705,7 @@
     if (!retry) return;
     retry.onclick = function () {
       self.renderSpinner("Retrying...");
-      if (self.identifier && !self.options.payload) {
-        self.loadTransactionByReference();
-      } else {
-        self.createPaymentRequest();
-      }
+      self.loadTransactionByReference();
     };
   };
 
@@ -732,12 +738,17 @@
         
         try {
           doc.execCommand("copy");
-          // Visual feedback - change opacity briefly
-          var originalOpacity = btn.style.opacity;
+          
+          // Store original content and replace with "Copied" text
+          var originalContent = btn.innerHTML;
+          btn.innerHTML = '<span style="font-size:11px;font-weight:500;color:#6366f1;white-space:nowrap;">Copied</span>';
           btn.style.opacity = "1";
+          
+          // Revert back to icon after 2 seconds
           setTimeout(function () {
-            btn.style.opacity = originalOpacity;
-          }, 200);
+            btn.innerHTML = originalContent;
+            btn.style.opacity = "";
+          }, 2000);
         } catch (err) {
           console.error("Copy failed", err);
         }
