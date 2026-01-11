@@ -3,7 +3,7 @@
 
   var STYLE_ID = "dotapay-inline-style";
   var ACTIVE_CLASS = "dotapay-inline__open";
-  var DEFAULT_BRAND = "#6A1BFF";
+  var DEFAULT_BRAND = "#6366f1";
 
   var DotapayInlineThemes = {
     dotapayDark: {
@@ -39,52 +39,70 @@
     var style = hostDoc.createElement("style");
     style.id = STYLE_ID;
     style.textContent =
-      ".dotapay-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;z-index:2147483647;padding:0;margin:0;border:none;width:100%;height:100%;}" +
-      ".dotapay-root{width:100%;height:100%;position:fixed;inset:0;margin:0;padding:24px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:var(--dotapay-overlay-bg,rgba(1,27,51,.65));font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;}" +
-      ".dotapay-card{background:var(--dotapay-card-bg,#fff);border-radius:20px;max-width:430px;width:100%;padding:36px 36px 30px;box-shadow:var(--dotapay-card-shadow,0 20px 50px rgba(0,0,0,.25));position:relative;overflow:hidden;border:1px solid rgba(255,255,255,0.04);}" +
-      ".dotapay-close{position:absolute;top:16px;right:16px;background:transparent;border:none;font-size:20px;cursor:pointer;color:var(--dotapay-subtext,#4c5667);}" +
-      ".dotapay-header{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:18px;}" +
-      ".dotapay-logo{height:80px;display:flex;align-items:center;}" +
-      ".dotapay-title{font-size:22px;font-weight:600;color:var(--dotapay-text,#011b33);margin-bottom:8px;}" +
-      ".dotapay-subtitle{font-size:14px;color:var(--dotapay-subtext,#4c5667);margin-bottom:24px;line-height:1.6;}" +
-      ".dotapay-section{margin-bottom:18px;}" +
-      ".dotapay-section--center{display:flex;justify-content:center;}" +
-      ".dotapay-label{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--dotapay-subtext,#70808f);margin-bottom:4px;}" +
-      ".dotapay-value{font-size:18px;font-weight:600;color:var(--dotapay-text,#011b33);word-break:break-all;}" +
-      ".dotapay-countdown{font-size:14px;font-weight:600;color:var(--dotapay-countdown-text,#c26b00);background:var(--dotapay-countdown-bg,rgba(194,107,0,.1));padding:12px 16px;border-radius:12px;display:inline-flex;align-items:center;gap:8px;}" +
-      ".dotapay-amount-box{background:var(--dotapay-primary-bg," +
-      DEFAULT_BRAND +
-      ");border-radius:12px;padding:20px;margin-bottom:24px;display:flex;justify-content:space-between;align-items:center;}" +
-      ".dotapay-amount-box__label{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,0.8);margin-bottom:8px;}" +
-      ".dotapay-amount-box__value{font-size:28px;font-weight:700;color:var(--dotapay-primary-text,#fff);}" +
+      ".dotapay-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;z-index:2147483647;padding:0;margin:0;border:none;width:100%;height:100%;}" +
+      ".dotapay-root{width:100%;height:100%;position:fixed;inset:0;margin:0;padding:20px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;}" +
+      ".dotapay-card{background:#ffffff;border-radius:8px;max-width:420px;width:100%;padding:0;box-shadow:0 2px 20px rgba(0,0,0,.08);position:relative;overflow:hidden;}" +
+      ".dotapay-close{position:absolute;top:16px;right:16px;background:transparent;border:none;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;color:#9ca3af;z-index:10;}" +
+      ".dotapay-close:hover{color:#374151;}" +
+      ".dotapay-header{padding:24px 24px 0;display:flex;justify-content:space-between;align-items:center;}" +
+      ".dotapay-header__left{flex:0 0 auto;}" +
+      ".dotapay-header__right{flex:0 0 auto;max-width:40%;overflow:hidden;}" +
+      ".dotapay-business-name{font-size:13px;font-weight:600;color:#6366f1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}" +
+      ".dotapay-logo{height:40px;display:flex;align-items:center;justify-content:center;}" +
+      ".dotapay-title{font-size:16px;font-weight:600;color:#1f2937;margin:0;}" +
+      ".dotapay-subtitle{font-size:13px;color:#6b7280;margin:8px 0 0;line-height:1.4;}" +
+      ".dotapay-amount-box{background:#6366f1;padding:24px;text-align:center;margin:20px 0 0;}" +
+      ".dotapay-amount-box__label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:rgba(255,255,255,0.7);margin-bottom:8px;}" +
+      ".dotapay-amount-box__value{font-size:28px;font-weight:700;color:#ffffff;margin-bottom:8px;}" +
       ".dotapay-amount-box__left{flex:1;}" +
       ".dotapay-amount-box__right{display:flex;align-items:center;gap:8px;}" +
-      ".dotapay-actions{margin-top:24px;display:flex;flex-direction:column;gap:12px;}" +
-      ".dotapay-primary{background:var(--dotapay-primary-bg," +
-      DEFAULT_BRAND +
-      ");border:none;color:var(--dotapay-primary-text,#fff);font-weight:600;font-size:15px;padding:15px;border-radius:10px;cursor:pointer;transition:opacity .2s,transform .15s ease;}" +
-      ".dotapay-primary:active{transform:translateY(1px);}" +
+      ".dotapay-countdown{font-size:12px;font-weight:600;color:#ffffff;background:rgba(255,255,255,.15);padding:8px 14px;border-radius:6px;display:inline-block;text-align:center;}" +
+      ".dotapay-section{padding:12px 24px;border-bottom:1px solid #f3f4f6;}" +
+      ".dotapay-section:last-of-type{border-bottom:none;}" +
+      ".dotapay-section--center{display:flex;justify-content:center;}" +
+      ".dotapay-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#9ca3af;margin-bottom:6px;}" +
+      ".dotapay-field-container{display:flex;align-items:center;justify-content:space-between;gap:8px;}" +
+      ".dotapay-value{font-size:15px;font-weight:500;color:#1f2937;word-break:break-all;flex:1;}" +
+      ".dotapay-copy-btn{background:transparent;border:none;padding:6px;cursor:pointer;opacity:0.5;transition:opacity .2s;flex-shrink:0;}" +
+      ".dotapay-copy-btn:hover{opacity:1;}" +
+      ".dotapay-copy-btn svg{width:16px;height:16px;display:block;}" +
+      ".dotapay-actions{padding:20px 24px;display:flex;flex-direction:column;gap:10px;background:#fafafa;}" +
+      ".dotapay-primary{background:#6366f1;border:none;color:#ffffff;font-weight:600;font-size:14px;padding:14px;border-radius:6px;cursor:pointer;transition:background .2s;}" +
+      ".dotapay-primary:hover:not(:disabled){background:#4f46e5;}" +
       ".dotapay-primary:disabled{opacity:.5;cursor:not-allowed;}" +
-      ".dotapay-secondary{background:var(--dotapay-secondary-bg,#f5f6fa);color:var(--dotapay-secondary-text,#0f172a);border:none;font-weight:600;font-size:14px;padding:12px;border-radius:8px;cursor:pointer;}" +
-      ".dotapay-spinner{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;padding:32px;color:var(--dotapay-text,#011b33);}" +
-      ".dotapay-spinner:before{content:'';width:48px;height:48px;border-radius:50%;border:4px solid rgba(255,255,255,0.08);border-top-color:var(--dotapay-brand," +
-      DEFAULT_BRAND +
-      ");animation:dotapay-rotate 1s linear infinite;}" +
-      ".dotapay-status{display:flex;flex-direction:column;align-items:center;text-align:center;margin-top:16px;}" +
+      ".dotapay-secondary{background:#ffffff;color:#6b7280;border:1px solid #e5e7eb;font-weight:600;font-size:14px;padding:14px;border-radius:6px;cursor:pointer;transition:all .2s;}" +
+      ".dotapay-secondary:hover{background:#f9fafb;color:#374151;}" +
+      ".dotapay-link-btn{background:transparent;border:none;color:#6366f1;font-size:14px;padding:12px;cursor:pointer;text-decoration:none;font-weight:500;transition:opacity .2s;}" +
+      ".dotapay-link-btn:hover{opacity:.8;}" +
+      ".dotapay-polling-header{display:flex;justify-content:space-between;align-items:center;padding:24px;border-bottom:1px solid #f3f4f6;}" +
+      ".dotapay-polling-ref{font-size:11px;color:#6b7280;text-align:right;}" +
+      ".dotapay-polling-amount{font-size:13px;font-weight:600;color:#6366f1;}" +
+      ".dotapay-polling-content{padding:32px 24px;text-align:center;}" +
+      ".dotapay-polling-message{font-size:14px;color:#4b5563;line-height:1.6;margin-bottom:24px;}" +
+      ".dotapay-progress{display:flex;align-items:center;justify-content:center;gap:12px;margin:24px 0;}" +
+      ".dotapay-progress-step{display:flex;flex-direction:column;align-items:center;gap:8px;}" +
+      ".dotapay-progress-icon{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#10b981;color:#ffffff;font-size:18px;}" +
+      ".dotapay-progress-icon--pending{background:#e5e7eb;border:2px solid #d1d5db;color:transparent;}" +
+      ".dotapay-progress-label{font-size:11px;color:#6b7280;font-weight:500;}" +
+      ".dotapay-progress-line{flex:1;height:2px;background:#e5e7eb;position:relative;max-width:120px;}" +
+      ".dotapay-progress-line:after{content:'';position:absolute;left:0;top:0;height:100%;width:50%;background:#10b981;}" +
+      ".dotapay-polling-countdown{font-size:13px;color:#6b7280;margin-top:16px;}" +
+      ".dotapay-spinner{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;padding:24px 20px;color:#6b7280;}" +
+      ".dotapay-spinner:before{content:'';width:36px;height:36px;border-radius:50%;border:3px solid #e5e7eb;border-top-color:#6366f1;animation:dotapay-rotate .8s linear infinite;}" +
+      ".dotapay-spinner p{margin:0;font-size:14px;line-height:1.5;}" +
+      ".dotapay-status{display:flex;flex-direction:column;align-items:center;text-align:center;padding:40px 24px;}" +
       ".dotapay-status__icon{font-size:48px;margin-bottom:16px;}" +
-      ".dotapay-status__icon--success{color:var(--dotapay-status-success,#1f9d4b);}" +
-      ".dotapay-status__icon--error{color:var(--dotapay-status-error,#d7263d);}" +
-      ".dotapay-icon-ring{width:72px;height:72px;border-radius:22px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;box-shadow:0 15px 30px rgba(0,0,0,.35);}" +
-      ".dotapay-icon-ring svg{width:32px;height:32px;display:block;}" +
-      ".dotapay-icon-ring--success{background:linear-gradient(135deg,#7f5dff,#b483ff);}" +
-      ".dotapay-status__message{font-size:18px;color:var(--dotapay-text,#011b33);margin-bottom:8px;font-weight:600;}" +
-      ".dotapay-status__detail{font-size:14px;color:var(--dotapay-subtext,#4c5667);line-height:1.6;}" +
-      ".dotapay-secured{margin-top:28px;font-size:12px;text-transform:uppercase;letter-spacing:.3em;color:var(--dotapay-subtext,#90a0b7);text-align:center;opacity:.8;}" +
-      ".dotapay-secured span{font-weight:700;color:var(--dotapay-brand," +
-      DEFAULT_BRAND +
-      ");margin-left:6px;}" +
+      ".dotapay-status__icon--success{color:#10b981;}" +
+      ".dotapay-status__icon--error{color:#ef4444;}" +
+      ".dotapay-icon-ring{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:16px;background:#ecfdf5;}" +
+      ".dotapay-icon-ring svg{width:28px;height:28px;display:block;color:#10b981;}" +
+      ".dotapay-icon-ring--success{background:#ecfdf5;}" +
+      ".dotapay-status__message{font-size:16px;color:#1f2937;margin-bottom:6px;font-weight:600;}" +
+      ".dotapay-status__detail{font-size:13px;color:#6b7280;line-height:1.5;}" +
+      ".dotapay-secured{padding:16px 24px;font-size:13px;letter-spacing:.08em;color:#9ca3af;text-align:center;border-top:1px solid #f3f4f6;}" +
+      ".dotapay-secured span{font-weight:900;color:#6366f1;}" +
       "@keyframes dotapay-rotate{to{transform:rotate(360deg)}}" +
-      "@media(max-width:520px){.dotapay-card{max-width:100%;padding:24px}.dotapay-title{font-size:18px}}";
+      "@media(max-width:520px){.dotapay-card{max-width:100%;border-radius:12px 12px 0 0;margin-top:auto;}.dotapay-header{padding:20px 20px 0;}.dotapay-section{padding:14px 20px;}.dotapay-actions{padding:16px 20px;}}";
     hostDoc.head.appendChild(style);
   }
 
@@ -249,6 +267,8 @@
     this.redirected = false;
     this.expiresAt = null;
     this.destroyed = false;
+    this.bankDetails = null;
+    this.businessInfo = null;
   }
 
   DotapayInlineSession.prototype.open = function () {
@@ -328,7 +348,7 @@
     if (!this.root) return;
     this.root.innerHTML =
       '<div class="dotapay-card">' +
-      buildHeader(this.theme) +
+      buildHeader(this.theme, this.businessInfo) +
       '<button class="dotapay-close" data-close>&times;</button><div class="dotapay-spinner">' +
       "<p>" +
       (message || "Please hold on...") +
@@ -340,73 +360,74 @@
 
   DotapayInlineSession.prototype.renderPolling = function () {
     if (!this.root) return;
-    var expiresMs = this.expiresAt;
-    var countdownMarkup = expiresMs
-      ? '<div class="dotapay-countdown" data-countdown="' + expiresMs + '">Please wait for ' + formatCountdown(expiresMs) + "</div>"
-      : "";
+    // Set 10 minutes from now for polling timeout
+    var pollingExpiresMs = Date.now() + (10 * 60 * 1000);
+    var countdownMarkup = '<div class="dotapay-polling-countdown" data-countdown="' + pollingExpiresMs + '">Please wait for ' + formatCountdown(pollingExpiresMs) + "</div>";
 
     this.root.innerHTML =
       '<div class="dotapay-card">' +
-      buildHeader(this.theme) +
+      buildHeader(this.theme, this.businessInfo) +
       '<button class="dotapay-close" data-close>&times;</button>' +
       '<div class="dotapay-spinner">' +
       "<p>We're waiting to receive your transfer. This can take up to a minute</p>" +
       "</div>" +
-      (countdownMarkup ? '<div class="dotapay-section dotapay-section--center">' + countdownMarkup + "</div>" : "") +
+      '<div class="dotapay-section dotapay-section--center" style="padding:8px 24px;">' + countdownMarkup + "</div>" +
+      '<div class="dotapay-section dotapay-section--center" style="padding:8px 24px;border-bottom:none;">' +
+        '<button class="dotapay-link-btn" data-show-details style="padding:8px;">Show account number</button>' +
+      '</div>' +
       buildSecuredFooter(this.theme) +
       "</div>";
     this.bindCloseButton();
+    this.bindShowDetailsButton();
 
-    // Start countdown if we have expiry time
-    if (expiresMs) {
-      this.startCountdown(expiresMs, "Please wait for ");
-    }
+    // Start countdown with 10-minute expiry
+    this.startCountdown(pollingExpiresMs, "Please wait for ");
   };
 
   DotapayInlineSession.prototype.renderBankDetails = function (details) {
     if (!this.root) return;
+    this.bankDetails = details; // Store details for later use
     var expiresMs = parseExpiry(details.expiresAt);
     this.expiresAt = expiresMs; // Store expiry time for polling
     var countdownMarkup = expiresMs
-      ? '<div class="dotapay-countdown" data-countdown="' + expiresMs + '">Expires in ' + formatCountdown(expiresMs) + "</div>"
+      ? '<div class="dotapay-countdown" data-countdown="' + expiresMs + '">This account expires in ' + formatCountdown(expiresMs) + "</div>"
       : "";
     this.root.innerHTML =
       '<div class="dotapay-card">' +
-      buildHeader(this.theme) +
+      buildHeader(this.theme, this.businessInfo) +
       '<button class="dotapay-close" data-close>&times;</button>' +
       '<div class="dotapay-amount-box">' +
-      '<div class="dotapay-amount-box__left">' +
       '<div class="dotapay-amount-box__label">Amount to send</div>' +
       '<div class="dotapay-amount-box__value">' +
       formatAmount(details.amount, details.currency) +
       "</div>" +
+      (countdownMarkup ? countdownMarkup : "") +
       "</div>" +
-      (countdownMarkup ? '<div class="dotapay-amount-box__right">' + countdownMarkup + "</div>" : "") +
-      "</div>" +
-      '<div class="dotapay-subtitle">Send exactly the amount above to this temporary account. Use the reference below so we can match your payment.</div>' +
-      '<div class="dotapay-section"><div class="dotapay-label">Account Name</div><div class="dotapay-value">' +
+      // '<div class="dotapay-subtitle">Send exactly the amount above to this temporary account. Use the reference below so we can match your payment.</div>' +
+      '<div class="dotapay-section"><div class="dotapay-label">Account Name</div><div class="dotapay-field-container"><div class="dotapay-value">' +
       details.accountName +
-      "</div></div>" +
-      '<div class="dotapay-section"><div class="dotapay-label">Account Number</div><div class="dotapay-value">' +
+      '</div><button class="dotapay-copy-btn" data-copy="' + details.accountName + '" title="Copy account name"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.5 7.5H2C1.73478 7.5 1.48043 7.39464 1.29289 7.20711C1.10536 7.01957 1 6.76522 1 6.5V2C1 1.73478 1.10536 1.48043 1.29289 1.29289C1.48043 1.10536 1.73478 1 2 1H6.5C6.76522 1 7.01957 1.10536 7.20711 1.29289C7.39464 1.48043 7.5 1.73478 7.5 2V2.5M5.5 4.5H10C10.5523 4.5 11 4.94772 11 5.5V10C11 10.5523 10.5523 11 10 11H5.5C4.94772 11 4.5 10.5523 4.5 10V5.5C4.5 4.94772 4.94772 4.5 5.5 4.5Z" stroke="#9C9C9C" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div></div>' +
+      '<div class="dotapay-section"><div class="dotapay-label">Account Number</div><div class="dotapay-field-container"><div class="dotapay-value">' +
       details.accountNumber +
-      "</div></div>" +
-      '<div class="dotapay-section"><div class="dotapay-label">Bank</div><div class="dotapay-value">' +
+      '</div><button class="dotapay-copy-btn" data-copy="' + details.accountNumber + '" title="Copy account number"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.5 7.5H2C1.73478 7.5 1.48043 7.39464 1.29289 7.20711C1.10536 7.01957 1 6.76522 1 6.5V2C1 1.73478 1.10536 1.48043 1.29289 1.29289C1.48043 1.10536 1.73478 1 2 1H6.5C6.76522 1 7.01957 1.10536 7.20711 1.29289C7.39464 1.48043 7.5 1.73478 7.5 2V2.5M5.5 4.5H10C10.5523 4.5 11 4.94772 11 5.5V10C11 10.5523 10.5523 11 10 11H5.5C4.94772 11 4.5 10.5523 4.5 10V5.5C4.5 4.94772 4.94772 4.5 5.5 4.5Z" stroke="#9C9C9C" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div></div>' +
+      '<div class="dotapay-section"><div class="dotapay-label">Bank</div><div class="dotapay-field-container"><div class="dotapay-value">' +
       details.bankName +
-      "</div></div>" +
-      '<div class="dotapay-section"><div class="dotapay-label">Payment reference</div><div class="dotapay-value">' +
-      details.reference +
-      "</div></div>" +
+      '</div><button class="dotapay-copy-btn" data-copy="' + details.bankName + '" title="Copy bank name"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.5 7.5H2C1.73478 7.5 1.48043 7.39464 1.29289 7.20711C1.10536 7.01957 1 6.76522 1 6.5V2C1 1.73478 1.10536 1.48043 1.29289 1.29289C1.48043 1.10536 1.73478 1 2 1H6.5C6.76522 1 7.01957 1.10536 7.20711 1.29289C7.39464 1.48043 7.5 1.73478 7.5 2V2.5M5.5 4.5H10C10.5523 4.5 11 4.94772 11 5.5V10C11 10.5523 10.5523 11 10 11H5.5C4.94772 11 4.5 10.5523 4.5 10V5.5C4.5 4.94772 4.94772 4.5 5.5 4.5Z" stroke="#9C9C9C" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div></div>' +
+      // '<div class="dotapay-section"><div class="dotapay-label">Payment reference</div><div class="dotapay-value">' +
+      // details.reference +
+      // "</div></div>" +
       '<div class="dotapay-actions">' +
       '<button class="dotapay-primary" data-confirm> I\'ve made the transfer – ' +
       formatAmount(details.amount, details.currency) +
-      ' </button>' +
-      '<button class="dotapay-secondary" data-close>Cancel</button>' +
+      // ' </button>' +
+      // '<button class="dotapay-secondary" data-close>Cancel</button>' +
       "</div>" +
       buildSecuredFooter(this.theme) +
       "</div>";
 
     this.bindCloseButton();
     this.bindConfirmButton();
+    this.bindCopyButtons();
 
     if (expiresMs) {
       this.startCountdown(expiresMs);
@@ -419,7 +440,7 @@
     this.clearVerificationInterval();
     this.root.innerHTML =
       '<div class="dotapay-card">' +
-      buildHeader(this.theme) +
+      buildHeader(this.theme, this.businessInfo) +
       '<button class="dotapay-close" data-close>&times;</button>' +
       '<div class="dotapay-status">' +
       '<div class="dotapay-icon-ring dotapay-icon-ring--success">' +
@@ -447,7 +468,7 @@
     this.clearVerificationInterval();
     this.root.innerHTML =
       '<div class="dotapay-card">' +
-      buildHeader(this.theme) +
+      buildHeader(this.theme, this.businessInfo) +
       '<button class="dotapay-close" data-close>&times;</button>' +
       '<div class="dotapay-status__icon dotapay-status__icon--error">!</div>' +
       '<div class="dotapay-status__message">Something went wrong</div>' +
@@ -554,6 +575,14 @@
         _this.paymentResponse = json;
         var transaction = json.transaction || json;
         _this.applyTransactionMetadata(transaction);
+        
+        // Extract business info
+        if (transaction.business) {
+          _this.businessInfo = {
+            name: transaction.business.name || null,
+            logo: transaction.business.logo || null
+          };
+        }
 
         // Check for error response
         if (json.error) {
@@ -681,6 +710,52 @@
     if (!confirmBtn) return;
     confirmBtn.onclick = function () {
       self.handleConfirm();
+    };
+  };
+
+  DotapayInlineSession.prototype.bindCopyButtons = function () {
+    if (!this.frameDoc) return;
+    var copyBtns = this.frameDoc.querySelectorAll("[data-copy]");
+    copyBtns.forEach(function (btn) {
+      btn.onclick = function (e) {
+        e.preventDefault();
+        var textToCopy = btn.getAttribute("data-copy");
+        if (!textToCopy) return;
+        
+        // Create temporary textarea for copying
+        var textarea = doc.createElement("textarea");
+        textarea.value = textToCopy;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        doc.body.appendChild(textarea);
+        textarea.select();
+        
+        try {
+          doc.execCommand("copy");
+          // Visual feedback - change opacity briefly
+          var originalOpacity = btn.style.opacity;
+          btn.style.opacity = "1";
+          setTimeout(function () {
+            btn.style.opacity = originalOpacity;
+          }, 200);
+        } catch (err) {
+          console.error("Copy failed", err);
+        }
+        
+        doc.body.removeChild(textarea);
+      };
+    });
+  };
+
+  DotapayInlineSession.prototype.bindShowDetailsButton = function () {
+    if (!this.frameDoc) return;
+    var self = this;
+    var btn = this.frameDoc.querySelector("[data-show-details]");
+    if (!btn) return;
+    btn.onclick = function () {
+      if (self.bankDetails) {
+        self.renderBankDetails(self.bankDetails);
+      }
     };
   };
 
@@ -819,7 +894,7 @@
         countdownPrefix = match[1] + " ";
       }
     }
-    countdownPrefix = countdownPrefix || "Expires in ";
+    countdownPrefix = countdownPrefix || "This account expires in ";
     var update = function () {
       var remaining = expiresMs - Date.now();
       if (remaining <= 0) {
@@ -880,21 +955,33 @@
     global.DotapayInline = DotapayInline;
   }
 
-  function buildHeader(theme) {
+  function buildHeader(theme, businessInfo) {
     var logoMarkup = "";
-    if (theme && theme.logo) {
+    var businessName = businessInfo && businessInfo.name ? businessInfo.name : "";
+    var businessLogo = businessInfo && businessInfo.logo ? businessInfo.logo : null;
+    
+    // Try business logo first, fallback to theme logo or Dotapay default
+    if (businessLogo) {
+      logoMarkup = '<img class="dotapay-logo" src="' + businessLogo + '" alt="' + (businessName || "Logo") + '" onerror="this.onerror=null;this.src=\'data:image/svg+xml,%3Csvg%20width%3D%2740%27%20height%3D%2740%27%20viewBox%3D%270%200%2040%2040%27%20fill%3D%27none%27%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%3E%3Ccircle%20cx%3D%2720%27%20cy%3D%2720%27%20r%3D%2720%27%20fill%3D%27%236366f1%27%2F%3E%3Ctext%20x%3D%2750%25%27%20y%3D%2750%25%27%20text-anchor%3D%27middle%27%20dy%3D%27.3em%27%20font-family%3D%27sans-serif%27%20font-size%3D%2720%27%20font-weight%3D%27bold%27%20fill%3D%27white%27%3ED%3C%2Ftext%3E%3C%2Fsvg%3E\';" />';
+    } else if (theme && theme.logo) {
       if (theme.logo.type === "image" && theme.logo.src) {
         logoMarkup = '<img class="dotapay-logo" src="' + theme.logo.src + '" alt="' + (theme.logo.alt || "Dotapay") + '"/>';
       } else if (theme.logo.type === "svg" && theme.logo.svg) {
         logoMarkup = '<div class="dotapay-logo">' + theme.logo.svg + "</div>";
       }
+    } else {
+      // Default Dotapay logo
+      logoMarkup = '<div class="dotapay-logo"><svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="20" r="20" fill="#6366f1"/><text x="50%" y="50%" text-anchor="middle" dy=".3em" font-family="sans-serif" font-size="20" font-weight="bold" fill="white">D</text></svg></div>';
     }
-    return '<div class="dotapay-header">' + logoMarkup + "</div>";
+    
+    var businessNameMarkup = businessName ? '<div class="dotapay-business-name" title="' + businessName + '">' + businessName + '</div>' : '';
+    
+    return '<div class="dotapay-header"><div class="dotapay-header__left">' + logoMarkup + '</div><div class="dotapay-header__right">' + businessNameMarkup + '</div></div>';
   }
 
   function buildSecuredFooter(theme) {
     var text = (theme && theme.securedText) || "Secured by Dotapay";
-    return '<div class="dotapay-secured">Secured by<span>' + text.replace(/Secured by/i, "").trim() + "</span></div>";
+    return '<div class="dotapay-secured">Secured by <span>' + text.replace(/Secured by/i, "").trim() + "</span></div>";
   }
 
   function createIframeOverlay(theme) {
